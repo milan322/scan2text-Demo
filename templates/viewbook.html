@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+<script src="/static/js/shapes.js" type="text/javascript"></script>
+{% block content %}
+
+<style type="text/css">
+
+.item .thumb {
+    height: 10%;
+    cursor: pointer;
+    float: top;
+}
+.item .thumb img {
+    width: 140px;
+    margin: 2px;
+    border-style: double;
+    border-width: 3px;
+}
+
+.carousel-control {
+    left: -15px;
+    width: 1%;
+}
+.carousel-control.right {
+    right: -15px;
+    width: 1%;
+}
+
+@media (min-width:1200px) {
+    .container {
+        width: 100% !important;
+    }
+
+    body {
+      padding:0;
+    }
+
+    .navbar-fixed-top, .navbar-fixed-bottom, .navbar-static-top {
+      margin-left: 0;
+      margin-right: 0;
+      margin-bottom:0;
+    }
+}
+
+input[type=radio] { 
+
+transform: scale(0.5); 
+-moz-transform: scale(0.5); 
+-ms-transform: scale(0.5); 
+-webkit-transform: scale(0.5); 
+-o-transform: scale(0.5); 
+}
+
+/*
+::-webkit-scrollbar { 
+    display: none; 
+}
+*/
+</style>
+
+<div id=content>
+
+    <input id="curpage" type="hidden">
+
+    <script type="text/javascript">
+        var bpath = '{{ bookpath }}';
+        var curpage = 1;
+        {% if curpageidx %}
+            curpage = {{ curpageidx }};
+        {% else %}
+            curpage = 1;
+        {% endif %}
+        $('#curpage').val(curpage);
+    </script>
+
+    <input id="bookdetails" type="hidden">
+
+    <!-- button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#ThumbnailModal">Open Thumbnail</button-->
+
+<div class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#indicNavbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">IndicTool</a>
+    </div>
+    <div class="collapse navbar-collapse" id="indicNavbar">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#" data-toggle="modal" data-target="#ThumbnailModal">Thumbnail</a></li>
+        <li class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#">Book<span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a onclick="saveData()">Save</a></li>
+            <li><a onclick="zoomIn()">ZoomIn</a></li>
+            <li><a onclick="zoomOut()">ZoomOut</a></li>
+            <li><a onclick="reparse_page()">Parse</a></li>
+            <li><a onclick="segment_page()">Segment</a></li>
+          </ul>
+        </li>
+        <li><a href="#">Scale <span id='scale'></span></a></li>
+        <li><a href="#">Admin</a></li>
+      </ul>
+      <!--<ul class="nav navbar-nav navbar-right">
+        <li><a href="#"><span class="glyphicon glyphicon-user"></span> Sign Up</a></li>
+        <li><a href="#"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+      </ul>-->
+    </div>
+  </div>
+</div>
+
+
+<div class="container">
+  <div class="row">
+  <!-- Modal -->
+  <div class="modal fade" id="ThumbnailModal" role="dialog">
+    <div class="modal-dialog modal-lg">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-body">
+        <div id="thumbcarousel" class="carousel slide" data-interval="false">
+            <div id="bookidx" class="carousel-inner">
+            </div><!-- /carousel-inner -->
+            <a class="left carousel-control" href="#thumbcarousel" data-slide="prev">
+                <span class="glyphicon glyphicon-chevron-left"></span>
+            </a>
+            <a class="right carousel-control" href="#thumbcarousel" data-slide="next">
+                <span class="glyphicon glyphicon-chevron-right"></span>
+            </a>
+        </div> <!-- /thumbcarousel -->
+          <button type="button" class="close" data-dismiss="modal">&times;</button>  
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  </div> <!-- row -->
+</div> <!-- container -->
+
+<div class="container" style="width:100%;">
+    <div class="row">
+    <div class="col-sm-1 col-xs-1">
+        <button type="button" class="btn btn-info btn-sm btn-block" onclick="saveData()">Save</button>
+        <button type="button" class="btn btn-info btn-sm btn-block" onclick="reparse_page()">Parse</button>
+        <button type="button" class="btn btn-info btn-sm btn-block" onclick="segment_page()">Segment</button>
+        <button type="button" class="btn btn-info btn-sm btn-block" onclick="accept()">Accept</button>
+        <button type="button" class="btn btn-info btn-sm btn-block" onclick="zoomIn()">ZoomIn</button>
+        <button type="button" class="btn btn-info btn-sm btn-block" onclick="zoomOut()">ZoomOut</button>
+
+        <div class="btn-group-vertical btn-block">
+            <button type="button" id="modeButton" flag="N" class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown"> Mode <span class="caret"></span></button>
+            <ul class="dropdown-menu" role="menu">
+                <li><a onclick="changeMode('Edit')">Edit</a></li>
+                <li><a onclick="changeMode('Review')">Review</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-sm-11 col-xs-11">
+        <div id="carousel" class="carousel slide" data-ride="carousel">
+            <div class="canvas-outer">
+                <div id='container' class="item active" style="overflow:auto; height:100vh">
+                <canvas id="pageCanvas"> </canvas>
+                </div>
+            <a id="prevPage" class="left carousel-control" onclick="slideTo('prev')">
+                <span class="glyphicon glyphicon-chevron-left"></span>
+            </a>
+            <a id="nextPage" class="right carousel-control" onclick="slideTo('next')">
+                <span class="glyphicon glyphicon-chevron-right"></span>
+            </a>
+            </div>
+        </div> <!-- /carousel --> 
+    </div> <!-- /col-sm-12 -->
+    </div><!-- /row -->
+</div> <!-- /container -->
+
+
+</div> <!-- content -->
+
+<script type="text/javascript" src="{{ url_for('static', filename='js/shapes.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/pramukhime.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/pramukhindic.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/CanvasInput.js') }}"></script>
+
+<script type="text/javascript">
+
+//var canvas = document.getElementById('pageCanvas');
+var container = document.getElementById('container');
+//container.appendChild(canvas);
+//var context = canvas.getContext('2d');
+
+window.cState = undefined;
+var curpage_annotations = {};
+var curpage_sections = {};
+getbook(true, bpath);
+console.log("Get Book Returned");
+
+pramukhIME.addLanguage(PramukhIndic,"sanskrit");
+pramukhIME.enable();
+
+function changeMode(mode='Edit') {
+    document.getElementById("modeButton").innerHTML = '<b><u>'+mode+' </u></b><span class="caret"></span>';
+    if (mode == 'Edit') {
+        document.getElementById("modeButton").flag = "E";
+    } else if (mode == 'Review') {
+        document.getElementById("modeButton").flag = "R";
+    } else {
+        document.getElementById("modeButton").flag = "N";
+    }
+	window.cState.changeMode(document.getElementById("modeButton").flag);
+}
+
+function segmentPage() {
+    window.cState.segmentPage();
+}
+
+function saveData() {
+    window.cState.saveShapes();
+}
+
+function accept() {
+    window.cState.accept();
+}
+
+function zoomIn() {
+    window.cState.zoomIn();
+    document.getElementById("scale").innerHTML = parseFloat(window.cState.scale).toFixed(1);
+}
+
+function zoomOut() {
+    window.cState.zoomOut();
+    document.getElementById("scale").innerHTML = parseFloat(window.cState.scale).toFixed(1);
+}
+
+function reparse_page() {
+    loadpage(true);
+}
+
+function segment_page() {
+
+    var curpage = $('#curpage').val();
+    if (curpage == undefined)
+        return;
+    var details = $('#bookdetails').val();
+    var bookdetails = JSON.parse(details);
+    var pagedetails = bookdetails['result']['pages'][curpage];
+    var anno_id = pagedetails['anno'];
+    var sec_id = pagedetails['sections'];
+    $(".hourglass").show();
+    $.getJSON('/books/page/anno/segment/'+anno_id, function(data){
+        if (! mychkstatus(data))
+            return;
+//        console.log("Page Anno: " + JSON.stringify(data.result));
+        curpage_annotations = data.result['anno'];
+        $(".hourglass").hide();
+    });
+    loadpage(true);
+}
+
+function loadpage(reparse = false) {
+    var curpage = $('#curpage').val();
+    if (curpage == undefined)
+        return;
+    console.log("Loading page " + curpage);
+    var details = $('#bookdetails').val();
+    console.log("Details: " + details);
+    var bookdetails = JSON.parse(details);
+    console.log("Book Details: " + JSON.stringify(bookdetails));
+    var pagedetails = bookdetails['result']['pages'][curpage];
+    console.log(pagedetails);
+    pgname = pagedetails['fname'];
+    var fpath = bpath + "/" + pgname;
+    console.log("Loading page path: " + fpath);
+    var anno_id = pagedetails['anno'];
+    var sec_id = pagedetails['sections'];
+    window.cState = canvasStateList.get('pageCanvas',"",curpage);
+    window.cState.anno_id = anno_id;
+
+    parms = { 'reparse' : reparse };
+    $(".hourglass").show();
+    $.getJSON('/books/page/anno/'+anno_id+'?' + serialize(parms), function(data){
+        if (! mychkstatus(data))
+            return;
+//        console.log("Page Anno: " + JSON.stringify(data.result));
+        curpage_annotations = data.result['anno'];
+        window.cState = init('pageCanvas','/books/page/image/'+fpath, 
+            curpage_annotations, curpage);
+        console.log(window.cState);
+    });
+
+    $.getJSON('/books/page/sections?id='+sec_id, function(data){
+        if (! mychkstatus(data))
+            return;
+        curpage_sections = data;
+        $(".hourglass").hide();
+    });
+}
+
+function slideTo(where) {
+    var curpage = $('#curpage').val();
+    if (!curpage) { 
+        console.log("curpage not defined. returning");
+        return;
+    }
+    if (where.toLowerCase() == 'next') {
+        console.log("Curpage = "+curpage);
+        var newpage = parseInt(curpage) + 1;
+        console.log("Nextpage = "+newpage);
+        console.log("Next called is "+$('#thumb'+newpage).parent().html());
+    } else {
+        console.log("Curpage = "+curpage);
+        var newpage = parseInt(curpage) - 1;
+        console.log("Prevpage = "+newpage);
+        console.log("Prev called is "+$('#thumb'+newpage).parent().html());
+    }
+    var attrDisplay = $('#thumb'+newpage).attr("attr-display");
+    var oid = $('#thumb'+newpage).attr("oid");
+    if (attrDisplay == undefined || oid == undefined) {
+        console.log("Reached the end or start");
+        return;
+    }
+    window.cState = canvasStateList.add('pageCanvas', attrDisplay, oid);
+    window.cState = canvasStateList.moveTo(window.cState.name);
+    setcurpage(oid, attrDisplay);
+    loadpage();
+}
+
+</script>
+
+<script type="text/javascript">
+    var canvasStateList = new CanvasStateList();
+    $(document).ready(function () {
+        $('#thumbcarousel').carousel({
+            interval: false
+        });
+
+        $('body').on('click','img',function(){
+            console.log("Click called on "+$(this).parent().html());
+            var attrDisplay = $(this).attr("attr-display");
+            var oid = $(this).attr("oid");
+            window.cState = canvasStateList.add('pageCanvas', attrDisplay, oid);
+            window.cState = canvasStateList.moveTo(window.cState.name);
+            setcurpage(oid, attrDisplay);
+            loadpage();
+        });
+
+        $('#curpage').change(function() {
+//            loadpage();
+        });
+
+    });
+
+    document.onkeypress = function (e) {
+//        e = e || window.event;//Get event
+        if (e.ctrlKey && e.shiftKey) {
+            var c = e.which || e.keyCode;//Get key code
+            console.log("You pressed Ctrl+Shift+"+c);
+            switch (c) {
+                case 80://Block Ctrl+Shift+'S'
+                    reparse_page();
+                    e.preventDefault();     
+                    e.stopPropagation();
+                    break;
+                case 83://Block Ctrl+Shift+'S'
+                    saveData();
+                    e.preventDefault();     
+                    e.stopPropagation();
+                    break;
+                case 187://Block Ctrl+Shift+'+'
+                    zoomIn();
+                    e.preventDefault();     
+                    e.stopPropagation();
+                    break;
+                case 189://Block Ctrl+Shift+'-'
+                    zoomOut();
+                    e.preventDefault();     
+                    e.stopPropagation();
+                    break;
+            }
+        }
+    };
+
+
+</script>
+
+{% endblock %}
+

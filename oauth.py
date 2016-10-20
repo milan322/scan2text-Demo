@@ -68,14 +68,19 @@ class FacebookSignIn(OAuthSignIn):
                   'grant_type': 'authorization_code',
                   'redirect_uri': self.get_callback_url()}
         )
+        onlyname= oauth_session.get('me').json()['name']
+        print "only-name=",onlyname
         me = oauth_session.get('me?fields=id,email').json()
-        return (
-            'facebook$' + me['id'],
-            me.get('email').split('@')[0],  # Facebook does not provide
-                                            # username, so the email's user
-                                            # is used instead
-            me.get('email')
-        )
+        #print "phone-number=",json.dumps(me,indent=4)
+        if me.get('email')==None:
+            return ('facebook' + me['id'], onlyname, me.get('email'))
+        else:
+            return (
+                'facebook$' + me['id'],
+                #onlyname,
+                me.get('email').split('@')[0], #for getting username from email
+                me.get('email')
+            )
 
 
 class TwitterSignIn(OAuthSignIn):

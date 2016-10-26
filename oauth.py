@@ -3,6 +3,7 @@ from flask import current_app, url_for, request, redirect, session
 import json
 import re
 
+
 class OAuthSignIn(object):
     providers = None
 
@@ -73,13 +74,14 @@ class FacebookSignIn(OAuthSignIn):
         me = oauth_session.get('me?fields=id,email').json()
         #print "phone-number=",json.dumps(me,indent=4)
         if me.get('email')==None:
-            return ('facebook' + me['id'], onlyname, me.get('email'))
+            return ('facebook' + me['id'], onlyname, me.get('email'),1)
         else:
             return (
                 'facebook$' + me['id'],
                 #onlyname,
                 me.get('email').split('@')[0], #for getting username from email
-                me.get('email')
+                me.get('email'),
+                1
             )
 
 

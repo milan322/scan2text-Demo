@@ -21,7 +21,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user,\
     current_user
 from oauth import OAuthSignIn
-
+import oauth
+import requests
 #from file import file_api
 from books import books_api
 #from oauthapp import oauth_api
@@ -39,15 +40,14 @@ app.config['OAUTH_CREDENTIALS'] = {
         'secret': '1b2523ac7d0f4b7a73c410b2ec82586c'
     },
     'twitter': {
-        'id': '3RzWQclolxWZIMq5LJqzRZPTl',
-        'secret': 'm9TEd58DSEtRrZHpz2EjrV9AhsBRxKMo8m3kuIZj3zLwzwIimt'
+        'id': 'jSd7EMZFTQlxjLFG4WLmAe2OX',
+        'secret': 'gvkh9fbbnKQXXbnqxfs8C0tCEqgNKKzoYJAWQQwtMG07UOPKAj'
     }
 }
 
 db = SQLAlchemy(app)
 lm = LoginManager(app)
 lm.login_view = 'index'
-
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -55,9 +55,22 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(64), nullable=False)
     email = db.Column(db.String(64), nullable=True)
 
+def authorized_work(required_url,default_url):
+    if 'logstatus' in session :
+        print "YES working milan-login-app-screen\n\n"
+        print session['logstatus']
+        if session['logstatus']==1:
+            return render_template(required_url, title='Home')
+        else:
+            print "No-logstatus\n\n"
+            return redirect(url_for(default_url))
+    else:
+        return redirect(url_for(default_url))
+    
+
 @app.route('/homepage')
 def mainpage():
-    return render_template('home.html', title='Home')
+    return authorized_work('home.html','index')
 
 @lm.user_loader
 def load_user(id):
@@ -72,7 +85,15 @@ def index():
 
 @app.route('/logout')
 def logout():
+    #obj = OAuthSignIn('facebook')
+    #payload = {'grant_type': 'client_credentials', 'client_id': obj.consumer_id, 'client_secret': obj.consumer_secret}
+    #resp = requests.post('https://graph.facebook.com/oauth/access_token?', params = payload)
+    #result = resp.text.split("=")[1]
+    #print "result=",result
+    #session.pop('social_id',None)
+    session['logstatus']=0
     logout_user()
+    #current_user.authenticated=False
     flash("Logged out successfully!", 'info')
     return redirect(url_for('index'))
 
@@ -80,8 +101,9 @@ def logout():
 @app.route('/authorize/<provider>')
 def oauth_authorize(provider):
     if not current_user.is_anonymous:
-        #return redirect(url_for('index'))
-        return redirect(url_for('mainpage'))
+        return redirect(url_for('index'))
+        #return redirect(url_for('mainpage'))
+    session['logstatus']=0
     oauth = OAuthSignIn.get_provider(provider)
     return oauth.authorize()
 
@@ -91,15 +113,16 @@ def oauth_callback(provider):
     if not current_user.is_anonymous:
         return redirect(url_for('mainpage'))
     oauth = OAuthSignIn.get_provider(provider)
-    social_id, username, email = oauth.callback()
+    social_id, username, email,logflag = oauth.callback()
     if social_id is None:
         flash('Authentication failed.')
-        return redirect(url_for('mainpage'))
+        return redirect(url_for('index'))
     user = User.query.filter_by(social_id=social_id).first()
     if not user:
         user = User(social_id=social_id, nickname=username, email=email)
         db.session.add(user)
         db.session.commit()
+    session['logstatus']=logflag
     login_user(user, True)
     return redirect(url_for('mainpage'))
 

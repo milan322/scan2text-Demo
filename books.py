@@ -65,10 +65,17 @@ def resize(img, box, fit, out):
 
 @books_api.route('/list', methods = ['GET', 'POST'])
 def getbooklist():
-    pattern = request.args.get('pattern')
-    print "books list filter = " + str(pattern)
-    binfo = {'books' : getdb().books.list(pattern) }
-    return myresult(binfo)
+    print "Session in books_api=",session['logstatus']
+    if 'logstatus' in session :
+        if session['logstatus']==1:
+            pattern = request.args.get('pattern')
+            print "books list filter = " + str(pattern)
+            binfo = {'books' : getdb().books.list(pattern) }
+            return myresult(binfo)
+        else:
+            return redirect(url_for('index'))
+    else:
+        return redirect(url_for('index'))
 
 @books_api.route('/get', methods = ['GET', 'POST'])
 def getbooksingle():
@@ -131,8 +138,15 @@ def delbook():
 
 @books_api.route('/view', methods = ['GET', 'POST'])
 def docustom():
-    return render_template("viewbook.html", \
-            bookpath=request.args.get('path'), title="Explore a Book")
+    if 'logstatus' in session :
+        if session['logstatus']==1:
+            return render_template("viewbook.html", \
+                bookpath=request.args.get('path'), title="Explore a Book")
+        else:
+            return redirect(url_for('index'))
+    else:
+        return redirect(url_for('index'))
+
 
 @books_api.route('/upload', methods = ['GET', 'POST'])
 def upload():
